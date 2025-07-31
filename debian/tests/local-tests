@@ -1,0 +1,330 @@
+#!/bin/sh
+
+# NOTES
+# =====
+#
+# 1. You will come across - at first glance weird - invocations of `touch
+# -d` in this script. These are necessitated by the fact that rsync 3.4.1
+# does not seem to pick up sub-second diffs in mtime when comparing the
+# source and target when called with the `-t` flag. By setting the mtime to
+# more than a second in difference explicitly, we bypass this [unexpected
+# rsync behavior][0].
+#
+# [0]: https://github.com/RsyncProject/rsync/issues/785
+#
+# 2. With a set REMOTE environment variable, this script generates a
+# REMOTE_PATH variable for every test. This can be used to run rsync over an
+# ssh connection. If configured for localhost, the target files will appear
+# on the same machine such that diffoscope can compare them. This mechanism
+# is used when local-tests is executed in the remote-tests script.
+
+set -u
+# set -e  # commented out because of https://github.com/kward/shunit2/issues/174
+
+DIFF_CMD=${DIFF_CMD:-"diffoscope --no-progress"}
+RSYNC_BIN=${RSYNC_BIN:-"/usr/bin/rsync"}
+
+setUp() {
+    TEST_DIR="$SHUNIT_TMPDIR"/$(head /dev/urandom | tr -dc A-Za-z0-9 | head -c10)
+    mkdir -p "$TEST_DIR"
+    cd "$TEST_DIR" || exit 1 # lacking -e, handle https://www.shellcheck.net/wiki/SC2164
+    TARGET_DIR="${REMOTE:-}""${REMOTE:+:}""$(pwd)"
+}
+
+tearDown() {
+    rm -rf ../"$TEST_DIR"
+}
+
+testSimpleFileCopy() {
+    echo foo > src
+
+    $RSYNC_BIN src "$TARGET_DIR"/target
+
+    $DIFF_CMD src target
+    assertTrue "Failed simple file copy" "$?"
+}
+
+testSimpleFileCopyWithPermAndMtimePreservation() {
+    echo foo > src
+    chmod 666 src
+
+    $RSYNC_BIN --times --perms src "$TARGET_DIR"/target
+
+    $DIFF_CMD --exclude-directory-metadata=no src target
+    assertTrue "Failed file copy with mtime and perm preservation" $?
+}
+
+testMtimeSyncForFileIfTargetNewer() {
+    echo foo > src
+    cp src target
+    touch -d "next second" target
+
+    $RSYNC_BIN --times src "$TARGET_DIR"/target
+
+    $DIFF_CMD --exclude-directory-metadata=no src target
+    assertTrue "Failed mtime sync for newer target" $?
+}
+
+testMtimeSyncForFileIfTargetNewerUpdate(){
+    startSkipping  # FIXME: remove skipping once 285 <= diffoscope > 300 (in all suites?)
+    echo foo > src
+    cp src target
+    touch -d "next minute" target
+
+    $RSYNC_BIN --times --update src "$TARGET_DIR"/target
+
+    $DIFF_CMD --exclude-directory-metadata=no src target 2>&1
+    status=$?
+    assertFalse 'Failed mtime sync for newer target with -u flag' $status
+    endSkipping
+}
+
+testChecksumFileComparison() {
+    # this test handles a case described in
+    #
+    # https://rachelbythebay.com/w/2025/05/31/sync/
+    #
+    # by default, rsync uses a metadata check on size and mtime to determine
+    # if there are diffs that need syncing. Now, it can happen, that the
+    # file contents change but size and mtime do not. In this case rsync
+    # will fail to pick up the diff and not sync the files, unless it is
+    # forced to compute the checksum of the files with -c.
+
+    echo "ABCDEFGHIJKLMNOP" > src.txt
+    touch -d "@1750044444" src.txt
+    $RSYNC_BIN --times src.txt "$TARGET_DIR"/target.txt
+    sed -i 'y/ABC/XYZ/' src.txt
+    touch -d "@1750044444" src.txt
+    $RSYNC_BIN src.txt "$TARGET_DIR"/target.txt
+
+    $DIFF_CMD src.txt target.txt 2>&1
+    assertFalse "Rsync unexpectedly synced file of same size and mtime" "$?"
+
+    $RSYNC_BIN --checksum src.txt "$TARGET_DIR"/target.txt
+
+    $DIFF_CMD src.txt target.txt
+    assertTrue "Rsync failed checksum based sync" "$?"
+}
+
+testAppendOnShorterFile() {
+    echo foo > src
+    cp src target
+    echo bar >> src
+
+    $RSYNC_BIN --append src "$TARGET_DIR"/target
+
+    $DIFF_CMD src target
+    assertTrue $?
+}
+
+testAppendOnLargerFile() {
+    
+    echo foo > src
+    cp src target
+    echo bar >> src
+    echo barbar >> target
+
+    $RSYNC_BIN --append src "$TARGET_DIR"/target
+
+    $DIFF_CMD src target --text diff.txt
+    cat << EOF > ./expected_diff.txt
+--- src
++++ target
+@@ -1,2 +1,2 @@
+ foo
+-bar
++barbar
+EOF
+    $DIFF_CMD expected_diff.txt diff.txt
+    assertTrue "Failed --append on larger target" $?
+}
+
+testAppendWithDifferentHistory(){
+    echo foo > src
+    echo foo > target
+    echo bar >> src
+    echo goo >> target
+    echo boo >> src
+
+    $RSYNC_BIN --append src "$TARGET_DIR"/target
+
+    $DIFF_CMD src target --text diff.txt
+    cat << EOF > ./expected_diff.txt
+--- src
++++ target
+@@ -1,3 +1,3 @@
+ foo
+-bar
++goo
+ boo
+EOF
+    $DIFF_CMD expected_diff.txt diff.txt
+    assertTrue "Failed --append with different history" $?
+}
+
+testAppendVerify(){
+    printf "foo\nbar\nboo" > src
+    printf "foo\ngoo" > target
+
+    $RSYNC_BIN --append-verify src "$TARGET_DIR"/target
+
+    $DIFF_CMD src target
+    assertTrue "Did not unify history with --append-verify" $?
+}
+
+testMkPath(){
+    mkdir -p src/abc
+    touch src/abc/x.c
+    touch src/abc/y.c
+    touch src/main.py
+
+    $RSYNC_BIN --mkpath src/abc/*.c "$TARGET_DIR"/target/src/abc/
+
+    $DIFF_CMD --exclude-directory-metadata=yes src target/src --text diff.txt
+    cat << EOF > ./expected_diff.txt
+--- src
++++ target/src
+├── file list
+│ @@ -1,2 +1 @@
+│ -abc
+│ -main.py
+│ +abc
+EOF
+    $DIFF_CMD expected_diff.txt diff.txt
+    assertTrue "Failed creating dir path on destination" $?
+}
+
+testSymlinkSync() {
+
+    mkdir src
+    touch src/abc.c
+    touch file_outside_src.txt
+    cd src || exit 1 # lacking -e, handle https://www.shellcheck.net/wiki/SC2164
+    ln -s abc.c link_to_abc
+    ln -s ../file_outside_src.txt link_to_file_outside
+    cd .. || exit 1 # lacking -e, handle https://www.shellcheck.net/wiki/SC2164
+    mkdir target
+
+    # sync without --links option
+    $RSYNC_BIN src/* "$TARGET_DIR"/target
+
+    $DIFF_CMD --exclude-directory-metadata=yes src target --text diff.txt
+    cat << EOF > expected_diff.txt
+--- src
++++ target
+├── file list
+│ @@ -1,3 +1 @@
+│ -abc.c
+│ -link_to_abc
+│ -link_to_file_outside
+│ +abc.c
+EOF
+    $DIFF_CMD --exclude-directory-metadata=yes diff.txt expected_diff.txt
+    assertTrue "Transferred symlink without --links option" $?
+
+    # sync with --safe-links option
+    $RSYNC_BIN --links --safe-links src/* "$TARGET_DIR"/target
+
+    $DIFF_CMD --exclude-directory-metadata=yes src target --text diff.txt
+    cat << EOF > expected_diff.txt
+--- src
++++ target
+├── file list
+│ @@ -1,3 +1,2 @@
+│  abc.c
+│ -link_to_abc
+│ -link_to_file_outside
+│ +link_to_abc
+EOF
+    $DIFF_CMD --exclude-directory-metadata=yes diff.txt expected_diff.txt
+    assertTrue "Unexpected diff for --safe-links sync" $?
+
+    # sync with links option
+    $RSYNC_BIN --links src/* "$TARGET_DIR"/target
+
+    $DIFF_CMD --exclude-directory-metadata=yes src target 
+    assertTrue "Unexpected diff for --links sync" $?
+}
+
+testMultiLevelDirSyncWithTimesAndPerm() {
+    mkdir -p src/abc/
+    echo "echo foo" > src/abc/one.sh
+    chmod u+x src/abc/one.sh
+    touch -d "last hour" src
+    touch -d "last minute" src/abc
+
+    $RSYNC_BIN --recursive --times --perms src/ "$TARGET_DIR"/target
+
+    $DIFF_CMD --exclude-directory-metadata=no src target
+    assertTrue $?
+}
+
+testMultiLevelDirSyncWithDelete() {
+    mkdir -p src/abc/
+    echo foo > src/abc/one.c
+    $RSYNC_BIN --recursive src/ "$TARGET_DIR"/target
+    echo foofoo > target/abc/two.c
+
+    $RSYNC_BIN --recursive --del src/ "$TARGET_DIR"/target
+
+    $DIFF_CMD --exclude-directory-metadata=yes src target
+    assertTrue $?
+}
+
+testMultiLevelDirArchive() {
+    mkdir -p src/abc
+    mkdir -p src/xyz
+    echo "echo foo" > src/abc/one.sh
+    chmod u+x src/abc/one.sh
+    echo foofoofoo > src/xyz/three.c
+    touch -d "yesterday" src
+    touch -d "last minute" src/abc
+    touch -d "last hour" src/xyz
+
+    $RSYNC_BIN --archive src/ "$TARGET_DIR"/target
+
+    $DIFF_CMD --exclude-directory-metadata=no src target
+    assertTrue $?
+}
+
+testDirSyncWithExcludePattern() {
+    mkdir -p src/reports
+    touch src/company.ledger
+    touch src/reports/2024.pdf
+    touch src/reports/2023.pdf
+    touch src/reports/2023.md
+    touch src/reports/2024.md
+
+    $RSYNC_BIN --recursive --exclude="*.pdf" src/ "$TARGET_DIR"/target
+    $DIFF_CMD --exclude-directory-metadata=yes src target --text diff.txt
+    cat << EOF > expected_diff.txt
+--- src
++++ target
+│   --- src/reports
+├── +++ target/reports
+│ ├── file list
+│ │ @@ -1,4 +1,2 @@
+│ │  2023.md
+│ │ +2024.md
+│ │ -2023.pdf
+│ │ -2024.md
+│ │ -2024.pdf
+EOF
+
+    $DIFF_CMD diff.txt expected_diff.txt
+    assertTrue "Failed --exclude test" $?
+}
+
+# TODO: test case for extended filesystem attributes (xattr)
+# TODO: test case for access control lists (acl)
+# TODO: test case with (compressed) tarballs
+# TODO: test case with target/ <- note trailing slash
+
+# (partially) requiring root rights:
+# TODO: test case for --group
+# TODO: test case for --owner
+# TODO: test case for --devices
+# TODO: test case for --specials
+
+# shellcheck disable=SC1091
+. shunit2

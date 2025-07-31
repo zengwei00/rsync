@@ -1,3 +1,74 @@
+rsync (3.4.1+ds1-5) unstable; urgency=medium
+
+  * Team upload.
+  * d/tests/local-tests: beautify test script
+  * d/tests: run rsync tests over ssh
+  * d/tests/local-tests: add test for --exclude flag
+  * d/copyright: add contributor
+
+ -- Alex <alex@puer-robustus.eu>  Sat, 26 Jul 2025 11:26:07 +0200
+
+rsync (3.4.1+ds1-5~exp1) experimental; urgency=medium
+
+  * Team upload.
+  * d/tests: add Debian-specific local rsync tests
+
+ -- Alex <alex@puer-robustus.eu>  Thu, 03 Jul 2025 22:28:36 +0200
+
+rsync (3.4.1+ds1-4) unstable; urgency=medium
+
+  * Upload to unstable
+
+ -- Samuel Henrique <samueloph@debian.org>  Mon, 09 Jun 2025 19:41:23 +0100
+
+rsync (3.4.1+ds1-4~exp2) experimental; urgency=medium
+
+  * Team upload.
+  * d/control: Add acl and attr packages to Build-Depends
+  * d/tests: Add "upstream-tests-as-root" test with needs-root restriction
+
+ -- Alex <alex@puer-robustus.eu>  Fri, 06 Jun 2025 16:40:59 +0200
+
+rsync (3.4.1+ds1-4~exp1) experimental; urgency=medium
+
+  * Team upload.
+  * docs(debian/copyright): consistently point to GNU licenses website
+  * d/tests: add superficial test for "rsync -h"
+
+ -- Alex <alex@puer-robustus.eu>  Wed, 04 Jun 2025 21:46:47 +0200
+
+rsync (3.4.1+ds1-3) unstable; urgency=medium
+
+  * Team upload.
+  * python3-cmarkgfm is currently broken for hppa architecture
+
+ -- Arnaud Rebillout <arnaudr@kali.org>  Fri, 07 Mar 2025 17:59:15 +0700
+
+rsync (3.4.1+ds1-2) unstable; urgency=medium
+
+  * Team upload.
+  * Update skip_devices_test patch to be non-linux
+  * Add patch to fix flaky hardlinks test
+  * d/watch: Drop filenamemangle and uversionmangle, simplify dversionmangle
+
+ -- Arnaud Rebillout <arnaudr@kali.org>  Thu, 06 Mar 2025 14:10:57 +0700
+
+rsync (3.4.1+ds1-1) unstable; urgency=medium
+
+  * Team upload.
+
+  [ Samuel Henrique ]
+  * Swap Maintainer with Uploaders, so samueloph can get email notifications
+
+  [ Arnaud Rebillout ]
+  * d/watch: Adjust url to point to the src dir with all the releases
+  * Update upstream signing key, metadata and email address
+  * New upstream version 3.4.1+ds1 (Closes: #1093081)
+  * Drop patches applied upstream
+  * Update shebang patch
+
+ -- Arnaud Rebillout <arnaudr@kali.org>  Wed, 05 Mar 2025 09:02:19 +0700
+
 rsync (3.3.0+ds1-4) unstable; urgency=critical
 
   [ Salvatore Bonaccorso ]

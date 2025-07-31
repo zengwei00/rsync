@@ -1,2 +1,17 @@
+Tests: local-tests
+Depends: @, @builddeps@, build-essential, diffoscope, shunit2
+
 Tests: upstream-tests
 Depends: @, @builddeps@, build-essential
+
+Test-Command: rsync -h
+Features: test-name=rsync-help
+Restrictions: superficial
+
+Tests: remote-tests
+Depends: @, @builddeps@, build-essential, diffoscope, shunit2, openssh-server, adduser
+Restrictions: needs-root, isolation-container
+
+Tests: upstream-tests-as-root
+Depends: @, @builddeps@, build-essential
+Restrictions: needs-root

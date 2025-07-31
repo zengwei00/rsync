@@ -1,8 +1,8 @@
 Source: rsync
 Section: net
 Priority: optional
-Maintainer: Paul Slootman <paul@debian.org>
-Uploaders: Samuel Henrique <samueloph@debian.org>
+Maintainer: Samuel Henrique <samueloph@debian.org>
+Uploaders: Paul Slootman <paul@debian.org>
 Build-Depends: debhelper-compat (= 13),
                libacl1-dev,
                libpopt-dev,
@@ -12,7 +12,9 @@ Build-Depends: debhelper-compat (= 13),
                zlib1g-dev,
                libssl-dev,
                python3:native,
-               python3-cmarkgfm:native
+               python3-cmarkgfm:native [!hppa] | python3-commonmark [hppa],
+               acl <!nocheck>,
+               attr <!nocheck>,
 Standards-Version: 4.7.0
 Rules-Requires-Root: no
 Homepage: https://rsync.samba.org/

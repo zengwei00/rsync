@@ -39,19 +39,22 @@ Error log:
  ----- devices log ends
  FAIL    devices
 ---
- testsuite/devices.test | 3 +++
- 1 file changed, 3 insertions(+)
+ testsuite/devices.test | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
 diff --git a/testsuite/devices.test b/testsuite/devices.test
-index ad5f936..9deec07 100644
+index ad5f936..1fff93f 100644
 --- a/testsuite/devices.test
 +++ b/testsuite/devices.test
-@@ -9,6 +9,9 @@
+@@ -9,6 +9,12 @@
  
  . "$suitedir/rsync.fns"
  
 +# Debian patch to skip this test as it fails on kfreebsd and hurd
-+test_skipped "Patched by Debian to skip as it fails on kfreebsd and hurd"
++case "$HOST_OS" in
++    *linux*) ;;
++    *) test_skipped "Patched by Debian to skip as it fails on kfreebsd and hurd" ;;
++esac
 +
  # Build some hardlinks
  

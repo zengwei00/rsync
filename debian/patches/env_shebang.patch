@@ -4,18 +4,53 @@ Subject: =?utf-8?q?Removes_usage_of_env_on_shebangs_as_per_Debian_Policy_?=
  =?utf-8?q?=C2=A7_10=2E4?=
 
 Forwarded: not-needed
-
-===================================================================
 ---
- support/cvs2includes      | 2 +-
- support/file-attr-restore | 2 +-
- support/files-to-excludes | 2 +-
- support/logfilter         | 2 +-
- support/lsh               | 2 +-
- support/mnt-excl          | 2 +-
- support/rsyncstats        | 2 +-
- 7 files changed, 7 insertions(+), 7 deletions(-)
+ packaging/cull-options     | 2 +-
+ rsync-ssl                  | 2 +-
+ support/atomic-rsync       | 2 +-
+ support/cvs2includes       | 2 +-
+ support/file-attr-restore  | 2 +-
+ support/files-to-excludes  | 2 +-
+ support/git-set-file-times | 2 +-
+ support/logfilter          | 2 +-
+ support/lsh                | 2 +-
+ support/mnt-excl           | 2 +-
+ support/munge-symlinks     | 2 +-
+ support/rrsync             | 2 +-
+ support/rsync-no-vanished  | 2 +-
+ support/rsyncstats         | 2 +-
+ 14 files changed, 14 insertions(+), 14 deletions(-)
 
+diff --git a/packaging/cull-options b/packaging/cull-options
+index e71818c..0bdf78e 100755
+--- a/packaging/cull-options
++++ b/packaging/cull-options
+@@ -1,4 +1,4 @@
+-#!/usr/bin/env python3
++#!/usr/bin/python3
+ # This script outputs either perl or python code that parses all possible options
+ # that the code in options.c might send to the server.  The resulting code is then
+ # included in the rrsync script.
+diff --git a/rsync-ssl b/rsync-ssl
+index 56ee7df..d76f0ab 100755
+--- a/rsync-ssl
++++ b/rsync-ssl
+@@ -1,4 +1,4 @@
+-#!/usr/bin/env bash
++#!/bin/bash
+ 
+ # This script uses openssl, gnutls, or stunnel to secure an rsync daemon connection.
+ 
+diff --git a/support/atomic-rsync b/support/atomic-rsync
+index 1964090..0313811 100755
+--- a/support/atomic-rsync
++++ b/support/atomic-rsync
+@@ -1,4 +1,4 @@
+-#!/usr/bin/env python3
++#!/usr/bin/python3
+ # This script lets you update a hierarchy of files in an atomic way by
+ # first creating a new hierarchy using rsync's --link-dest option, and
+ # then swapping the hierarchy into place.  **See the usage message for
 diff --git a/support/cvs2includes b/support/cvs2includes
 index 4a0d1d8..62401cb 100755
 --- a/support/cvs2includes
@@ -46,6 +81,16 @@ index a47d7f8..bb5c3a8 100755
  # This script takes an input of filenames and outputs a set of include/exclude
  # directives that can be used by rsync to copy just the indicated files using
  # an --exclude-from=FILE or -f'. FILE' option. To be able to delete files on
+diff --git a/support/git-set-file-times b/support/git-set-file-times
+index e06f073..56d4ba0 100755
+--- a/support/git-set-file-times
++++ b/support/git-set-file-times
+@@ -1,4 +1,4 @@
+-#!/usr/bin/env python3
++#!/usr/bin/python3
+ 
+ import os, re, argparse, subprocess
+ from datetime import datetime
 diff --git a/support/logfilter b/support/logfilter
 index 29cfe69..282914a 100755
 --- a/support/logfilter
@@ -76,6 +121,36 @@ index bc8b5bc..8f5f9ef 100755
  # This script takes a command-line arg of a source directory
  # that will be passed to rsync, and generates a set of excludes
  # that will exclude all mount points from the list.  This is
+diff --git a/support/munge-symlinks b/support/munge-symlinks
+index e7a5474..cfb0c40 100755
+--- a/support/munge-symlinks
++++ b/support/munge-symlinks
+@@ -1,4 +1,4 @@
+-#!/usr/bin/env python3
++#!/usr/bin/python3
+ # This script will either prefix all symlink values with the string
+ # "/rsyncd-munged/" or remove that prefix.
+ 
+diff --git a/support/rrsync b/support/rrsync
+index e8b0cc0..d3ccd48 100755
+--- a/support/rrsync
++++ b/support/rrsync
+@@ -1,4 +1,4 @@
+-#!/usr/bin/env python3
++#!/usr/bin/python3
+ 
+ # Restricts rsync to subdirectory declared in .ssh/authorized_keys.  See
+ # the rrsync man page for details of how to make use of this script.
+diff --git a/support/rsync-no-vanished b/support/rsync-no-vanished
+index b31a5d2..c85d488 100755
+--- a/support/rsync-no-vanished
++++ b/support/rsync-no-vanished
+@@ -1,4 +1,4 @@
+-#!/usr/bin/env bash
++#!/bin/bash
+ 
+ REAL_RSYNC=/usr/bin/rsync
+ IGNOREEXIT=24
 diff --git a/support/rsyncstats b/support/rsyncstats
 index 99fd545..ab7246d 100755
 --- a/support/rsyncstats
