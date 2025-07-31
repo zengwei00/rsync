@@ -1,0 +1,15 @@
+#!/bin/sh
+
+set -e
+
+HOMEDIR="$AUTOPKGTEST_TMP/home"
+adduser --home "$HOMEDIR" --disabled-password --gecos autopkgtest rsync
+mkdir -m 700 "$HOMEDIR/.ssh"
+
+ssh-keyscan localhost > "$HOMEDIR/.ssh/known_hosts" 2>/dev/null
+ssh-keygen -q -N '' -f "$HOMEDIR/.ssh/id_rsa"
+cp "$HOMEDIR/.ssh/id_rsa.pub" "$HOMEDIR/.ssh/authorized_keys"
+chown -R rsync: "$HOMEDIR/.ssh/"
+
+runuser -u rsync -- env REMOTE=rsync@localhost /bin/sh debian/tests/local-tests
+

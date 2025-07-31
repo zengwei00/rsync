@@ -1,25 +1,5 @@
 disable_reconfigure_req.diff
-skip_devices_test.patch
+skip_devices_test_non_linux.patch
 env_shebang.patch
 fix_rrsync_man_generation.patch
-configure_ac_fix_failing_IPv6_check_due_to_missing_return_type.patch
-
-# Patches from 3.4.0
-rsync-upstream-CVE-patches-v3/CVE-2024-12084/0001-Some-checksum-buffer-fixes.patch
-rsync-upstream-CVE-patches-v3/CVE-2024-12084/0002-Another-cast-when-multiplying-integers.patch
-rsync-upstream-CVE-patches-v3/CVE-2024-12085/0001-prevent-information-leak-off-the-stack.patch
-rsync-upstream-CVE-patches-v3/CVE-2024-12086/0001-refuse-fuzzy-options-when-fuzzy-not-selected.patch
-rsync-upstream-CVE-patches-v3/CVE-2024-12086/0002-added-secure_relative_open.patch
-rsync-upstream-CVE-patches-v3/CVE-2024-12086/0003-receiver-use-secure_relative_open-for-basis-file.patch
-rsync-upstream-CVE-patches-v3/CVE-2024-12086/0004-disallow-.-elements-in-relpath-for-secure_relative_o.patch
-rsync-upstream-CVE-patches-v3/CVE-2024-12087/0001-Refuse-a-duplicate-dirlist.patch
-rsync-upstream-CVE-patches-v3/CVE-2024-12087/0002-range-check-dir_ndx-before-use.patch
-rsync-upstream-CVE-patches-v3/CVE-2024-12088/0001-make-safe-links-stricter.patch
-rsync-upstream-CVE-patches-v3/CVE-2024-12747/0001-fixed-symlink-race-condition-in-sender.patch
-rsync-upstream-CVE-patches-v3/version_update/0001-raise-protocol-version-to-32.patch
-rsync-upstream-CVE-patches-v3/version_update/0002-change-version-to-3.4.0.patch
-rsync-upstream-CVE-patches-v3/version_update/0003-update-NEWS-for-3.4.0.patch
-
-# Regression from CVE-2024-12087 (#1093052)
-Fix-FLAG_GOT_DIR_FLIST-collission-with-FLAG_HLINKED.patch
-Fix_use-after-free_in_generator.patch
+fix-flaky-hardlinks-test.patch

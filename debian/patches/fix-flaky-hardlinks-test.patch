@@ -1,0 +1,60 @@
+From: Arnaud Rebillout <arnaudr@kali.org>
+Date: Thu, 6 Mar 2025 10:54:05 +0700
+Subject: Fix flaky hardlinks test
+
+The test was added in dc34990, it turns out that it's flaky. It failed
+once on the Debian build infra, cf. [1].
+
+The problem is that the command `rsync -aH '$fromdir/sym' '$todir'`
+updates the mod time of `$todir`, so there might be a diff between the
+output of `rsync_ls_lR $fromdir` and `rsync_ls_lR $todir`, if ever rsync
+runs 1 second (or more) after the directories were created.
+
+To clarify: it's easy to make the test fails 100% of the times with this
+change:
+
+```
+ makepath "$fromdir/sym" "$todir"
++sleep 5
+ checkit "$RSYNC -aH '$fromdir/sym' '$todir'" "$fromdir" "$todir"
+```
+
+With the fix proposed here, we don't use `checkit` anymore, instead we
+just run the rsync command, then a simple `diff` to compare the two
+directories. This is exactly what the other `-H` test just above does.
+
+In case there's some doubts, `diff` fails if `sym` is missing:
+
+```
+$ mkdir -p foo/sym bar
+$ diff foo bar || echo KO!
+Only in foo: sym
+KO!
+```
+
+I tested that, after this commit, the test still catches the `-H`
+regression in rsync 3.4.0.
+
+Fixes: https://github.com/RsyncProject/rsync/issues/735
+
+[1]: https://buildd.debian.org/status/fetch.php?pkg=rsync&arch=ppc64el&ver=3.4.1%2Bds1-1&stamp=1741147156&raw=0
+
+Forwarded: https://github.com/RsyncProject/rsync/pull/737
+---
+ testsuite/hardlinks.test | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/testsuite/hardlinks.test b/testsuite/hardlinks.test
+index 68fd270..c02db3f 100644
+--- a/testsuite/hardlinks.test
++++ b/testsuite/hardlinks.test
+@@ -81,7 +81,8 @@ diff $diffopt "$name1" "$todir" || test_fail "solo copy of name1 failed"
+ # enabled (this has broken in 3.4.0 so far, so we need this test).
+ rm -rf "$fromdir" "$todir"
+ makepath "$fromdir/sym" "$todir"
+-checkit "$RSYNC -aH '$fromdir/sym' '$todir'" "$fromdir" "$todir"
++$RSYNC -aH "$fromdir/sym" "$todir"
++diff $diffopt "$fromdir" "$todir" || test_fail "solo copy of sym failed"
+ 
+ # The script would have aborted on error, so getting here means we've won.
+ exit 0
