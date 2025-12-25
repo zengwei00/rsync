@@ -3,3 +3,4 @@ skip_devices_test_non_linux.patch
 env_shebang.patch
 fix_rrsync_man_generation.patch
 fix-flaky-hardlinks-test.patch
+CVE-2025-10158.patch
